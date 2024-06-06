@@ -1,3 +1,2 @@
-<?php 
-$con = mysqli_connect('localhost', 'root', '', 'userform');
-?>
+<?php
+$con = mysqli_connect('localhost', 'root', '', 'helpdesk_system_db');

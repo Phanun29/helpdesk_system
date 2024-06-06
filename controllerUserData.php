@@ -52,7 +52,7 @@ if (isset($_POST['signup'])) {
         $errors['password'] = "Confirm password not matched!";
     }
 
-    $stmt = $con->prepare("SELECT * FROM usertable WHERE email = ?");
+    $stmt = $con->prepare("SELECT * FROM tbl_users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -64,8 +64,8 @@ if (isset($_POST['signup'])) {
     if (count($errors) === 0) {
         $encpass = password_hash($password, PASSWORD_BCRYPT);
         $code = rand(999999, 111111);
-        $status = "notverified";
-        $stmt = $con->prepare("INSERT INTO usertable (name, email, password, code, status) VALUES (?, ?, ?, ?, ?)");
+        $status = "0";
+        $stmt = $con->prepare("INSERT INTO tbl_users (users_name, email, password, code, status) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("sssis", $name, $email, $encpass, $code, $status);
         if ($stmt->execute()) {
             $subject = "Email Verification Code";
@@ -91,7 +91,7 @@ if (isset($_POST['signup'])) {
 if (isset($_POST['check'])) {
     $_SESSION['info'] = "";
     $otp_code = htmlspecialchars($_POST['otp']);
-    $stmt = $con->prepare("SELECT * FROM usertable WHERE code = ?");
+    $stmt = $con->prepare("SELECT * FROM tbl_users WHERE code = ?");
     $stmt->bind_param("i", $otp_code);
     $stmt->execute();
     $code_res = $stmt->get_result();
@@ -101,13 +101,13 @@ if (isset($_POST['check'])) {
         $fetch_code = $fetch_data['code'];
         $email = $fetch_data['email'];
         $code = 0;
-        $status = 'verified';
-        $stmt = $con->prepare("UPDATE usertable SET code = ?, status = ? WHERE code = ?");
+        $status = '1';
+        $stmt = $con->prepare("UPDATE tbl_users SET code = ?, status = ? WHERE code = ?");
         $stmt->bind_param("isi", $code, $status, $fetch_code);
         if ($stmt->execute()) {
             $_SESSION['name'] = $fetch_data['name']; // Ensure the session variable is set correctly
             $_SESSION['email'] = $email;
-            header('location: home.php');
+            header('location: helpdesk/Backend/index.php');
             exit();
         } else {
             $errors['otp-error'] = "Failed while updating code!";
@@ -121,18 +121,18 @@ if (isset($_POST['check'])) {
 if (isset($_POST['login'])) {
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $password = mysqli_real_escape_string($con, $_POST['password']);
-    $check_email = "SELECT * FROM usertable WHERE email = '$email'";
+    $check_email = "SELECT * FROM tbl_users WHERE email = '$email'";
     $res = mysqli_query($con, $check_email);
     if (mysqli_num_rows($res) > 0) {
         $fetch = mysqli_fetch_assoc($res);
         $fetch_pass = $fetch['password'];
         if (password_verify($password, $fetch_pass)) {
             $_SESSION['email'] = $email;
-            $status = $fetch['status'];
-            if ($status == 'verified') {
+            $status = $fetch['1'];
+            if ($status == '1') {
                 $_SESSION['email'] = $email;
                 $_SESSION['password'] = $password;
-                header('location: home.php');
+                header('location: helpdesk/Backend/index.php');
             } else {
                 $info = "It looks like you haven't verified your email - $email";
                 $_SESSION['info'] = $info;
@@ -149,14 +149,14 @@ if (isset($_POST['login'])) {
 // If user click continue button in forgot password form
 if (isset($_POST['check-email'])) {
     $email = htmlspecialchars($_POST['email']);
-    $stmt = $con->prepare("SELECT * FROM usertable WHERE email = ?");
+    $stmt = $con->prepare("SELECT * FROM tbl_users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $run_sql = $stmt->get_result();
 
     if ($run_sql->num_rows > 0) {
         $code = rand(999999, 111111);
-        $stmt = $con->prepare("UPDATE usertable SET code = ? WHERE email = ?");
+        $stmt = $con->prepare("UPDATE tbl_users SET code = ? WHERE email = ?");
         $stmt->bind_param("is", $code, $email);
         if ($stmt->execute()) {
             $subject = "Password Reset Code";
@@ -182,7 +182,7 @@ if (isset($_POST['check-email'])) {
 if (isset($_POST['check-reset-otp'])) {
     $_SESSION['info'] = "";
     $otp_code = htmlspecialchars($_POST['otp']);
-    $stmt = $con->prepare("SELECT * FROM usertable WHERE code = ?");
+    $stmt = $con->prepare("SELECT * FROM tbl_users WHERE code = ?");
     $stmt->bind_param("i", $otp_code);
     $stmt->execute();
     $code_res = $stmt->get_result();
@@ -212,7 +212,7 @@ if (isset($_POST['change-password'])) {
         $code = 0;
         $email = $_SESSION['email'];
         $encpass = password_hash($password, PASSWORD_BCRYPT);
-        $stmt = $con->prepare("UPDATE usertable SET code = ?, password = ? WHERE email = ?");
+        $stmt = $con->prepare("UPDATE tbl_users SET code = ?, password = ? WHERE email = ?");
         $stmt->bind_param("iss", $code, $encpass, $email);
         if ($stmt->execute()) {
             $info = "Your password has been changed. Now you can login with your new password.";
