@@ -64,8 +64,8 @@ if (isset($_POST['signup'])) {
     if (count($errors) === 0) {
         $encpass = password_hash($password, PASSWORD_BCRYPT);
         $code = rand(999999, 111111);
-        $status = "0";
-        $stmt = $con->prepare("INSERT INTO tbl_users (users_name, email, password, code, status) VALUES (?, ?, ?, ?, ?)");
+        $status = "notverified";
+        $stmt = $con->prepare("INSERT INTO tbl_users (name, email, password, code, status) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("sssis", $name, $email, $encpass, $code, $status);
         if ($stmt->execute()) {
             $subject = "Email Verification Code";
@@ -101,13 +101,13 @@ if (isset($_POST['check'])) {
         $fetch_code = $fetch_data['code'];
         $email = $fetch_data['email'];
         $code = 0;
-        $status = '1';
+        $status = 'verified';
         $stmt = $con->prepare("UPDATE tbl_users SET code = ?, status = ? WHERE code = ?");
         $stmt->bind_param("isi", $code, $status, $fetch_code);
         if ($stmt->execute()) {
             $_SESSION['name'] = $fetch_data['name']; // Ensure the session variable is set correctly
             $_SESSION['email'] = $email;
-            header('location: helpdesk/Backend/index.php');
+            header('location: home.php');
             exit();
         } else {
             $errors['otp-error'] = "Failed while updating code!";
@@ -128,11 +128,11 @@ if (isset($_POST['login'])) {
         $fetch_pass = $fetch['password'];
         if (password_verify($password, $fetch_pass)) {
             $_SESSION['email'] = $email;
-            $status = $fetch['1'];
-            if ($status == '1') {
+            $status = $fetch['status'];
+            if ($status == 'verified') {
                 $_SESSION['email'] = $email;
                 $_SESSION['password'] = $password;
-                header('location: helpdesk/Backend/index.php');
+                header('location: home.php');
             } else {
                 $info = "It looks like you haven't verified your email - $email";
                 $_SESSION['info'] = $info;
